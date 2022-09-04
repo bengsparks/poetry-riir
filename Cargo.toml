@@ -1,0 +1,13 @@
+[package]
+edition = "2021"
+name = "poetry-cli"
+version = "0.1.0"
+
+[dependencies.clap]
+features = ["cargo", "derive"]
+version = "*"
+
+[dependencies.poetry]
+path = "poetry"
+
+[workspace]
