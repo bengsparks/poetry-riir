@@ -6,7 +6,7 @@ use std::io::{Error, ErrorKind, Write};
 
 pub mod license;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Options {
     pub path: PathBuf,
 
