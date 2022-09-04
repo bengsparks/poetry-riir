@@ -9,21 +9,10 @@ pub enum Kind {
     MIT,
 }
 
-impl From<Kind> for &'static str {
-    fn from(kind: Kind) -> Self {
-        return match kind {
-            Kind::MIT => include_str!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/resources/license/MIT.md"
-            )),
-        };
-    }
-}
-
 #[derive(Debug)]
 pub(crate) struct License {
-    pub(crate) fmt_options: LicenseFormatOptions,
     pub(crate) unfilled: Kind,
+    pub(crate) fmt_options: LicenseFormatOptions,
 }
 
 impl ToString for License {
