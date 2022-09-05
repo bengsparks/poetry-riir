@@ -2,6 +2,8 @@
 edition = "2021"
 name = "poetry-cli"
 version = "0.1.0"
+[dependencies]
+dialoguer = "*"
 
 [dependencies.clap]
 features = ["cargo", "derive"]

@@ -1,5 +1,5 @@
 use chrono::Datelike;
-use std::fs::{File, self};
+use std::fs::{self, File};
 use std::path::PathBuf;
 
 use std::io::{Error, ErrorKind, Write};
@@ -10,19 +10,19 @@ pub mod license;
 pub struct Options {
     pub path: PathBuf,
 
-    pub name: Option<String>,
+    pub name: String,
 
-    pub description: Option<String>,
+    pub description: String,
 
-    pub author: Option<String>,
+    pub author: String,
 
     pub license: Option<license::Kind>,
 }
 
 pub fn climain(options: Options) -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(license) = &options.license {
-        let license = create_license(*license, &options)?;
+    sanity_checks(&options)?;
 
+    if let Some(license) = create_license_from_options(&options)? {
         let mut license_path = options.path.clone();
         license_path.push("LICENSE.md");
 
@@ -34,27 +34,55 @@ pub fn climain(options: Options) -> Result<(), Box<dyn std::error::Error>> {
     return Ok(());
 }
 
-fn create_license(
-    kind: license::Kind,
+fn sanity_checks(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
+    return if options.path.exists() {
+        Err(Box::new(Error::new(
+            ErrorKind::IsADirectory,
+            format!(
+                "The provided path {path} is a directory",
+                path = options.path.display().to_string()
+            ),
+        )))
+    } else if !options.path.is_dir() {
+        Err(Box::new(Error::new(
+            ErrorKind::InvalidInput,
+            format!(
+                "The provided path {path} is not a directory",
+                path = options.path.display().to_string()
+            ),
+        )))
+    } else if options.path.read_dir()?.next().is_none() {
+        Err(Box::new(Error::new(
+            ErrorKind::DirectoryNotEmpty,
+            format!(
+                "The provided path {path} is not a directory",
+                path = options.path.display().to_string()
+            ),
+        )))
+    } else {
+        Ok(())
+    };
+}
+
+fn create_license_from_options(
     options: &Options,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let name = match &options.name {
-        Some(name) => name,
-        None => {
-            return Err(Box::new(Error::new(
-                ErrorKind::InvalidInput,
-                "Name is required to create license",
-            )))
+) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    return Ok(match &options.license {
+        Some(license) => {
+            let license = license::License {
+                unfilled: *license,
+                fmt_options: license::LicenseFormatOptions {
+                    name: options.name.to_owned(),
+                    year: chrono::Utc::now().year(),
+                },
+            };
+
+            Some(license.to_string())
         }
-    };
+        None => None,
+    });
+}
 
-    let license = license::License {
-        unfilled: kind,
-        fmt_options: license::LicenseFormatOptions {
-            name: name.to_string(),
-            year: chrono::Utc::now().year(),
-        },
-    };
-
-    return Ok(license.to_string());
+fn create_bare_pyproject() -> Result<(), Box<dyn std::error::Error>> {
+    return Ok(());
 }
