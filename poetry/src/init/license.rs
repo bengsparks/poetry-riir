@@ -9,6 +9,14 @@ pub enum Kind {
     MIT,
 }
 
+impl ToString for Kind {
+    fn to_string(&self) -> String {
+        return match *self {
+            Kind::MIT => String::from("MIT"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct License {
     pub(crate) unfilled: Kind,
