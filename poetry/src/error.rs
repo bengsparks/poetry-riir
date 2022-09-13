@@ -8,10 +8,16 @@ pub enum PoetryError {
     #[error("`{path}` is not an empty directory")]
     InitIsNotEmptyDirectory { path: String },
 
-    #[error("Failed during TOML operatiom: {source}")]
-    TomlError {
+    #[error("Failed during serialising TOML operation: {source}")]
+    TomlSerError {
         #[from]
         source: toml::ser::Error,
+    },
+
+    #[error("Failed during deserialising TOML operation: {source}")]
+    TomlDeError {
+        #[from]
+        source: toml::de::Error,
     },
 
     #[error("IO Error occurred: {source}")]
@@ -19,4 +25,15 @@ pub enum PoetryError {
         #[from]
         source: std::io::Error,
     },
+
+    #[error("Failed to make request - details:\n{source}")]
+    ReqwestError {
+        #[from]
+        source: reqwest::Error,
+    },
+
+    #[error("Unable to create package format from {format}")]
+    UnknownPackageFormat {
+        format: String
+    }
 }

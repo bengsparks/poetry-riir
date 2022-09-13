@@ -6,14 +6,14 @@ pub(crate) struct LicenseFormatOptions {
 
 #[derive(Copy, Clone, Debug)]
 pub enum Kind {
-    MIT,
+    Mit,
 }
 
 impl ToString for Kind {
     fn to_string(&self) -> String {
         return match *self {
-            Kind::MIT => String::from("MIT"),
-        }
+            Kind::Mit => String::from("MIT"),
+        };
     }
 }
 
@@ -26,7 +26,7 @@ pub(crate) struct License {
 impl ToString for License {
     fn to_string(&self) -> String {
         return match self.unfilled {
-            Kind::MIT => {
+            Kind::Mit => {
                 format!(
                     include_str!(concat!(
                         env!("CARGO_MANIFEST_DIR"),

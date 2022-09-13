@@ -1,16 +1,16 @@
+use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
 
 use chrono::Datelike;
-use toml;
 
 use crate::document;
 use crate::error::PoetryError;
 
 pub mod license;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Options {
     pub path: PathBuf,
 
@@ -23,18 +23,10 @@ pub struct Options {
     pub license: Option<license::Kind>,
 }
 
-pub fn climain(options: Options) -> Result<(), PoetryError> {
+pub async fn climain(options: Options) -> Result<(), PoetryError> {
     sanity_checks(&options)?;
 
-    fs::create_dir_all(&options.path)?;
-
-    if let Some(document) = bare_pyproject(&options) {
-        let mut pyproject_path = options.path.clone();
-        pyproject_path.push("pyproject.toml");
-
-        let mut file = fs::File::create(&pyproject_path)?;
-        io::Write::write_all(&mut file, toml::to_string(&document)?.as_bytes())?;
-    }
+    create_bare_project(&options)?;
 
     if let Some(license) = license_from_options(&options) {
         let mut license_path = options.path.clone();
@@ -52,10 +44,7 @@ fn sanity_checks(options: &Options) -> Result<(), PoetryError> {
         Err(PoetryError::IoError {
             source: io::Error::new(
                 io::ErrorKind::InvalidData,
-                format!(
-                    "`{path}` is not a directory",
-                    path = options.path.display().to_string()
-                ),
+                format!("`{path}` is not a directory", path = options.path.display()),
             ),
         })
     } else if options.path.exists() && options.path.read_dir()?.next().is_some() {
@@ -64,7 +53,7 @@ fn sanity_checks(options: &Options) -> Result<(), PoetryError> {
                 io::ErrorKind::DirectoryNotEmpty,
                 format!(
                     "`{path}` is not an empty directory",
-                    path = options.path.display().to_string()
+                    path = options.path.display()
                 ),
             ),
         })
@@ -90,22 +79,28 @@ fn license_from_options(options: &Options) -> Option<String> {
     };
 }
 
-fn bare_pyproject(options: &Options) -> Option<document::PyProject> {
-    return Some(document::PyProject {
-        tool: document::Tool {
-            poetry: document::Poetry {
-                name: options.name.clone(),
-                version: "0.1.0".to_string(),
-                description: options.description.clone(),
-                license: options.license.map(|l| ToString::to_string(&l)),
+fn create_bare_project(options: &Options) -> Result<(), PoetryError> {
+    fs::create_dir_all(&options.path)?;
+    return document::write_pyproject(
+        &options.path,
+        &document::PyProject {
+            tool: document::Tool {
+                poetry: document::Poetry {
+                    name: options.name.clone(),
+                    version: "0.1.0".to_string(),
+                    description: options.description.clone(),
+                    license: options.license.map(|l| ToString::to_string(&l)),
 
-                authors: None,
-                maintainers: None,
-                readme: None,
-                url: None,
-                repository: None,
-                documentation: None,
+                    authors: None,
+                    maintainers: None,
+                    readme: None,
+                    url: None,
+                    repository: None,
+                    documentation: None,
+
+                    dependency: HashMap::new(),
+                },
             },
         },
-    });
+    );
 }

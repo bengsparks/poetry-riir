@@ -2,11 +2,17 @@
 edition = "2021"
 name = "poetry-cli"
 version = "0.1.0"
-
 [dependencies]
-anyhow = {version = "1.0", features = ["backtrace"]}
 dialoguer = "*"
-clap = {version = "*", features = ["cargo", "derive"] }
+tokio = "*"
+
+[dependencies.anyhow]
+features = ["backtrace"]
+version = "1.0"
+
+[dependencies.clap]
+features = ["cargo", "derive"]
+version = "*"
 
 [dependencies.poetry]
 path = "poetry"

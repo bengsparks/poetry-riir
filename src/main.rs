@@ -6,31 +6,35 @@ use clap::{AppSettings, ArgMatches, Command, CommandFactory, Parser, ValueEnum};
 
 use dialoguer::{theme::ColorfulTheme, Input};
 
-use poetry::init;
+use poetry::error::PoetryError;
+use poetry::{add, init};
 
 #[derive(Clone, Debug, ValueEnum)]
 enum LicenseKind {
-    MIT,
+    Mit,
 }
 
 impl From<LicenseKind> for init::license::Kind {
     fn from(lk: LicenseKind) -> Self {
         return match lk {
-            LicenseKind::MIT => init::license::Kind::MIT,
+            LicenseKind::Mit => init::license::Kind::Mit,
         };
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), PoetryError> {
     let app = Command::new(crate_name!())
         .setting(AppSettings::ArgRequiredElseHelp)
         .about(crate_description!())
         .author(crate_authors!())
         .version(crate_version!())
-        .subcommand(Init::command());
+        .subcommand(Init::command())
+        .subcommand(Add::command());
 
     match app.get_matches().subcommand() {
-        Some(("init", m)) => init(m),
+        Some(("init", m)) => init(m).await,
+        Some(("add", m)) => add(m).await,
         _ => Ok(()),
     }
 }
@@ -42,7 +46,7 @@ struct Init {
     path: Option<PathBuf>,
 
     #[clap(short, long, value_parser)]
-    name: Option<Vec<String>>,
+    name: Option<String>,
 
     #[clap(short, long, value_parser)]
     description: Option<String>,
@@ -54,7 +58,7 @@ struct Init {
     license: Option<LicenseKind>,
 }
 
-fn init(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+async fn init(matches: &ArgMatches) -> Result<(), PoetryError> {
     let options = init::Options {
         path: match matches.get_one::<PathBuf>("path") {
             Some(p) => p.to_owned(),
@@ -79,11 +83,55 @@ fn init(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
             .map(Into::into),
     };
 
-    return init::climain(options);
+    return init::climain(options).await;
 }
 
-/// Prompt for user input with the ability to provide a default value
-fn prompt<T>(prompt: &str) -> Result<T, Box<dyn std::error::Error>>
+#[derive(Parser, Debug)]
+#[clap(name = "add")]
+struct Add {
+    #[clap(value_parser)]
+    deps: Vec<String>,
+
+    #[clap(short, long, value_parser)]
+    group: Option<String>,
+
+    #[clap(short = 'D', long, action)]
+    dev: bool,
+
+    #[clap(short, long, value_parser)]
+    extras: Option<Vec<String>>,
+
+    #[clap(short, long, action)]
+    dry_run: bool,
+}
+
+async fn add(matches: &ArgMatches) -> Result<(), PoetryError> {
+    let options = add::Options {
+        deps: match matches.get_many::<String>("deps") {
+            Some(ds) => ds.into_iter().cloned().collect(),
+            None => Vec::new(),
+        },
+
+        group: match matches.get_one::<String>("group") {
+            Some(g) => g.to_owned(),
+            None => String::from("main"),
+        },
+
+        dev: matches.get_flag("dev"),
+
+        extras: match matches.get_many::<String>("extras") {
+            Some(es) => es.into_iter().cloned().collect(),
+            None => Vec::new(),
+        },
+
+        dry_run: matches.get_flag("dry-run"),
+    };
+
+    return add::climain(options).await;
+}
+
+/// Prompt for user input
+fn prompt<T>(prompt: &str) -> Result<T, PoetryError>
 where
     T: Clone + ToString + FromStr,
     <T as FromStr>::Err: std::fmt::Debug + ToString,
