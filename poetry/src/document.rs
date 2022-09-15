@@ -23,10 +23,10 @@ pub fn write_pyproject(folder: &Path, project: &PyProject) -> Result<(), PoetryE
     let mut pyproject_path = folder.to_path_buf();
     pyproject_path.push("pyproject.toml");
 
-    let ser = toml::to_string_pretty(project)?;
+    let ser = toml::to_string(project)?;
 
     let mut file = fs::File::create(&pyproject_path)?;
-    io::Write::write_all(&mut file, toml::to_string(&ser)?.as_bytes())?;
+    io::Write::write_all(&mut file, ser.as_bytes())?;
 
     return Ok(());
 }
@@ -54,7 +54,7 @@ pub struct Poetry {
     pub repository: Option<String>,
     pub documentation: Option<String>,
 
-    pub dependency: HashMap<String, DependencyMetadata>,
+    pub dependency: Option<HashMap<String, DependencyMetadata>>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

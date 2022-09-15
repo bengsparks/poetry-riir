@@ -8,4 +8,4 @@ pub mod add;
 pub mod error;
 pub mod init;
 
-mod document;
+pub mod document;

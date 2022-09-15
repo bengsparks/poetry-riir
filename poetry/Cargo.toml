@@ -38,5 +38,5 @@ num_cpus = "1.13.1"
 
 [[test]]
 name = "init"
-path = "tests/cucumber/init.rs"
+path = "tests/cucumber/init/mod.rs"
 harness = false

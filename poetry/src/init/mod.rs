@@ -98,7 +98,7 @@ fn create_bare_project(options: &Options) -> Result<(), PoetryError> {
                     repository: None,
                     documentation: None,
 
-                    dependency: HashMap::new(),
+                    dependency: None,
                 },
             },
         },

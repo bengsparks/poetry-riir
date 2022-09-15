@@ -35,5 +35,10 @@ pub enum PoetryError {
     #[error("Unable to create package format from {format}")]
     UnknownPackageFormat {
         format: String
+    },
+
+    #[error("Unknown license: {license}")]
+    UnknownLicense {
+        license: String
     }
 }
