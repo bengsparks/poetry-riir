@@ -7,6 +7,7 @@ async-trait = "*"
 chrono = "*"
 futures = "*"
 thiserror = "1.0"
+derive_builder = "0.11.2"
 
 [dependencies.reqwest]
 features = ["json"]
@@ -29,14 +30,21 @@ features = ["preserve_order"]
 version = "*"
 
 [dev-dependencies]
-cucumber = "0.13"
+cucumber = "0.14.1"
 anyhow = "1.0"
 enum-as-inner = "0.5.1"
 
 tempfile = "3"
 num_cpus = "1.13.1"
+derive_builder = "0.11.2"
+log = "0.4.17"
 
 [[test]]
 name = "init"
 path = "tests/cucumber/init/mod.rs"
+harness = false
+
+[[test]]
+name = "add"
+path = "tests/cucumber/add/mod.rs"
 harness = false

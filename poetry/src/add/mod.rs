@@ -2,6 +2,9 @@ mod package_format;
 mod provider;
 mod pypi;
 
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use reqwest::Client;
 
 use crate::document;
@@ -9,22 +12,63 @@ use crate::error::PoetryError;
 
 use self::pypi::ProjectResp;
 
+use derive_builder::Builder;
+
+#[derive(Builder, Clone, Debug)]
+#[builder(derive(Debug))]
 pub struct Options {
+    #[builder(field(public))]
     pub deps: Vec<String>,
+
+    #[builder(default = r#"String::from("main")"#)]
     pub group: String,
+
+    #[builder(default = r#"false"#)]
     pub dev: bool,
+
+    #[builder(default)]
     pub extras: Vec<String>,
+
+    #[builder(default = r#"false"#)]
     pub dry_run: bool,
+
+    #[builder(
+        default = r#"std::env::current_dir().expect("Could not get current working directory")"#
+    )]
+    pub working_directory: PathBuf,
 }
 
 pub async fn climain(options: Options) -> Result<(), PoetryError> {
     let client = Client::new();
 
     let projects = pypi_project(&client, &options.deps).await?;
-    for project in projects {}
 
-    let cwd = std::env::current_dir()?;
-    let config = document::load_pyproject(&cwd)?;
+    let mut config = document::load_pyproject(&options.working_directory)?;
+
+    let requested: HashMap<_, _> = projects
+        .iter()
+        .map(|p| (p.info.name.clone(), p.info.version.clone()))
+        .collect();
+
+    let prev_count = match config.tool.poetry.dependency {
+        Some(ref s) => s.len(),
+        None => 0,
+    };
+
+    let preexisting = config
+        .tool
+        .poetry
+        .dependency
+        .get_or_insert_with(HashMap::new);
+
+    preexisting.extend(requested.clone());
+    if prev_count + requested.len() != preexisting.len() {
+        return Err(PoetryError::AddError {
+            deps: options.deps.clone(),
+        });
+    }
+
+    document::write_pyproject(&options.working_directory, &config)?;
 
     return Ok(());
 }

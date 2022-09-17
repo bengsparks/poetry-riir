@@ -54,7 +54,7 @@ pub struct Poetry {
     pub repository: Option<String>,
     pub documentation: Option<String>,
 
-    pub dependency: Option<HashMap<String, DependencyMetadata>>,
+    pub dependency: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -77,5 +77,5 @@ pub struct ReadMe {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DependencyMetadata {
     version: semver::Version,
-    source: Option<String>,
+    // version: semver::Version,
 }

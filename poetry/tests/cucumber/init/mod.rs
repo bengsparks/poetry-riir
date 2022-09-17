@@ -1,4 +1,4 @@
-use cucumber::{FailureWriter, WorldInit};
+use cucumber::{StatsWriter, World};
 use tokio;
 
 use poetry::{error::PoetryError, init::Options};
@@ -7,7 +7,7 @@ mod background;
 mod setup;
 mod tests;
 
-#[derive(Debug, cucumber::WorldInit, enum_as_inner::EnumAsInner)]
+#[derive(Debug, cucumber::World, enum_as_inner::EnumAsInner)]
 pub enum InitWorld {
     Initial,
     Prepared {
@@ -17,15 +17,6 @@ pub enum InitWorld {
         options: Options,
         result: Result<(), PoetryError>,
     },
-}
-
-#[async_trait::async_trait(?Send)]
-impl cucumber::World for InitWorld {
-    type Error = std::convert::Infallible;
-
-    async fn new() -> Result<Self, Self::Error> {
-        return Ok(Self::Initial);
-    }
 }
 
 impl Default for InitWorld {
@@ -43,7 +34,7 @@ async fn main() {
 
     if summary.execution_has_failed() {
         let failed_steps = summary.failed_steps();
-        let parsing_errors = summary.parsing_errors();
+        let parsing_errors = summary.parsing_errors;
         panic!(
             "{} step{} failed, {} parsing error{}",
             failed_steps,

@@ -33,12 +33,11 @@ pub enum PoetryError {
     },
 
     #[error("Unable to create package format from {format}")]
-    UnknownPackageFormat {
-        format: String
-    },
+    UnknownPackageFormat { format: String },
 
     #[error("Unknown license: {license}")]
-    UnknownLicense {
-        license: String
-    }
+    UnknownLicense { license: String },
+
+    #[error("Could not add {deps:?} to pyproject.toml")]
+    AddError { deps: Vec<String> },
 }

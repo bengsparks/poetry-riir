@@ -13,12 +13,7 @@ async fn bare_project_settings(world: &mut InitWorld) {
     *world = {
         let cwd = tempfile::Builder::new()
             .tempdir()
-            .context("Failed to create temporary directory");
-
-        let cwd = match cwd {
-            Ok(t) => t,
-            Err(e) => panic!("Error occurred during creation of temporary directory: {e}"),
-        };
+            .expect("Failed to create temporary directory");
 
         let author = String::from("FirstName LastName <first.last@cucumber-domain.io>");
         let name = String::from("cucumber-project");

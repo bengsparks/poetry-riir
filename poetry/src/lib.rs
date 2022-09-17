@@ -1,4 +1,4 @@
-#![feature(backtrace, backtrace_frames)]
+#![feature(backtrace_frames)]
 #![feature(io_error_more)]
 
 // #![deny(clippy::implicit_return)]
