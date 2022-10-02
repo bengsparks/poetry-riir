@@ -4,7 +4,8 @@ use std::path::PathBuf;
 
 use chrono::Datelike;
 
-use crate::document;
+use crate::config;
+use crate::pyproject;
 use crate::error::PoetryError;
 
 pub mod license;
@@ -80,26 +81,32 @@ fn license_from_options(options: &Options) -> Option<String> {
 
 fn create_bare_project(options: &Options) -> Result<(), PoetryError> {
     fs::create_dir_all(&options.path)?;
-    return document::write_pyproject(
-        &options.path,
-        &document::PyProject {
-            tool: document::Tool {
-                poetry: document::Poetry {
-                    name: options.name.clone(),
-                    version: "0.1.0".to_string(),
-                    description: options.description.clone(),
-                    license: options.license.map(|l| ToString::to_string(&l)),
 
-                    authors: None,
-                    maintainers: None,
-                    readme: None,
-                    url: None,
-                    repository: None,
-                    documentation: None,
+    let pyproject = pyproject::PyProject {
+        tool: pyproject::Tool {
+            poetry: pyproject::Poetry {
+                name: options.name.clone(),
+                version: "0.1.0".to_string(),
+                description: options.description.clone(),
+                license: options.license.map(|l| ToString::to_string(&l)),
 
-                    dependency: None,
-                },
+                authors: None,
+                maintainers: None,
+                readme: None,
+                url: None,
+                repository: None,
+                documentation: None,
+
+                dependency: None,
             },
         },
-    );
+    };
+
+    pyproject.write(&options.path)?;
+
+    let config = config::Config::default();
+    config.write(&options.path)?;
+
+    return Ok(());
+
 }

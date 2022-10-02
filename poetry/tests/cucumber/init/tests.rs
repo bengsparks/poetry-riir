@@ -1,16 +1,16 @@
-use poetry::document;
+use poetry::pyproject::PyProject;
 
 use crate::InitWorld;
 
-#[cucumber::then("Project directory contains pyproject.toml")]
-fn project_directory_contains_pyproject_toml(world: &mut InitWorld) {
+#[cucumber::then(expr = "Project directory contains {string}")]
+fn project_directory_contains_pyproject_toml(world: &mut InitWorld, filename: String) {
     let (options, _) = world.as_completed().expect("World State not set!");
     let mut pyproject_path = options.path.clone();
-    pyproject_path.push("pyproject.toml");
+    pyproject_path.push(&filename);
 
     if !pyproject_path.exists() {
         panic!(
-            "Failed to create pyproject.toml in project folder @ {folder}",
+            "Failed to create {filename} in project folder @ {folder}",
             folder = options.path.display()
         );
     }
@@ -37,7 +37,7 @@ fn creation_of_project_directory(world: &mut InitWorld, status: String) {
 fn license_key_is_set_in_pyproject(world: &mut InitWorld, license: String) {
     let (options, _) = world.as_completed().expect("World State not set!");
 
-    let config = document::load_pyproject(&options.path).expect("Could not read from pyproject.toml");
+    let config = PyProject::load(&options.path).expect("Could not read from pyproject.toml");
     let value = config.tool.poetry.license.expect("License key was not set at all");
 
     if value != license {

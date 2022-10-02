@@ -1,4 +1,4 @@
-use log::{info, warn};
+use poetry::config::Config;
 
 use crate::common::{ProjectSetupWorld, Setup};
 
@@ -44,7 +44,7 @@ async fn project_creation_is_attempted(world: &mut crate::AddWorld) {
     let setup1 = setup.clone();
 
     let options = poetry::init::Options {
-        path: setup.location,
+        path: setup.proj_location,
         name: setup.name,
         description: setup.description,
         author: setup.author,
@@ -56,6 +56,11 @@ async fn project_creation_is_attempted(world: &mut crate::AddWorld) {
 
     if let Err(e) = poetry::init::climain(options.clone()).await {
         panic!("Error occurred during climain invocation: {e}")
+    } else {
+        // Ensure virtualenv is cleaned up by instantiating it inside the tempdir!
+        let mut config = Config::load(&setup1.proj_location).unwrap();
+        config.virtualenvs.in_project = true;
+        config.write(&setup1.proj_location).unwrap();
     }
 
     *world = crate::AddWorld::Prepared {

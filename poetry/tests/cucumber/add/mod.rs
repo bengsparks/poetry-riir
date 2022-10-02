@@ -1,7 +1,7 @@
 use cucumber::{StatsWriter, World};
 use tokio;
 
-use poetry::{add, error::PoetryError};
+use poetry::{add, error::PoetryError, config::Config};
 
 mod background;
 mod setup;
@@ -70,16 +70,17 @@ async fn add_dependencies_to_project(world: &mut AddWorld) {
         .as_prepared_mut()
         .expect("Prepared world state is expected");
 
-    add_builder.working_directory(setup.location.clone());
+    add_builder.working_directory(setup.proj_location.clone());
 
     let add = match add_builder.build() {
         Ok(add) => add,
         Err(e) => panic!("Failed to create add::Options from builder: {e}"),
     };
 
+    let result = poetry::add::climain(add.clone()).await;
     *world = AddWorld::Completed {
         setup: setup.clone(),
         add: add.clone(),
-        result: poetry::add::climain(add.clone()).await,
+        result,
     };
 }

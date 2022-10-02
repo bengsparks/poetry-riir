@@ -1,16 +1,18 @@
-mod package_format;
+pub mod package_format;
+
+mod git;
 mod provider;
 mod pypi;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use reqwest::Client;
-
-use crate::document;
+use crate::config::Config;
 use crate::error::PoetryError;
+use crate::pyproject::{self, PyProject};
+use crate::virtualenv::Virtualenv;
 
-use self::pypi::ProjectResp;
+use self::package_format::Packages;
 
 use derive_builder::Builder;
 
@@ -39,61 +41,30 @@ pub struct Options {
 }
 
 pub async fn climain(options: Options) -> Result<(), PoetryError> {
-    let client = Client::new();
+    let config = Config::load(&options.working_directory)?;
+    let mut venv = Virtualenv::create_from_config(&config, &options.working_directory)?;
+    
+    let packages: Packages = (&options.deps).try_into()?;
+    let metadata = packages.download(&config.virtualenvs.path).await?;
 
-    let projects = pypi_project(&client, &options.deps).await?;
-
-    let mut config = document::load_pyproject(&options.working_directory)?;
-
-    let requested: HashMap<_, _> = projects
-        .iter()
-        .map(|p| (p.info.name.clone(), p.info.version.clone()))
-        .collect();
-
-    let prev_count = match config.tool.poetry.dependency {
-        Some(ref s) => s.len(),
-        None => 0,
-    };
-
-    let preexisting = config
-        .tool
-        .poetry
-        .dependency
-        .get_or_insert_with(HashMap::new);
-
-    preexisting.extend(requested.clone());
-    if prev_count + requested.len() != preexisting.len() {
-        return Err(PoetryError::AddError {
-            deps: options.deps.clone(),
-        });
-    }
-
-    document::write_pyproject(&options.working_directory, &config)?;
+    let mut pyproject = PyProject::load(&options.working_directory)?;
+    pyproject = venv.apply_changes(pyproject, &options.deps, &metadata)?;
+    pyproject.write(&options.working_directory)?;
 
     return Ok(());
 }
 
-async fn pypi_project(
-    client: &Client,
-    deps: &Vec<String>,
-) -> Result<Vec<ProjectResp>, PoetryError> {
-    let mut requests = Vec::with_capacity(deps.len());
-    for dep in deps {
-        let req = client
-            .get(format!("https://pypi.org/pypi/{dep}/json"))
-            .header("Host", "pypi.org")
-            .header("Accept", "application/json")
-            .send();
-        requests.push(req);
+fn update_dependencies(
+    original: Option<HashMap<String, pyproject::DependencyMetadata>>,
+    update: HashMap<String, pyproject::DependencyMetadata>,
+) -> Result<HashMap<String, pyproject::DependencyMetadata>, PoetryError> {
+    let mut updateable = original.unwrap_or_default();
+
+    let (prev_count, update_count) = (updateable.len(), update.len());
+    updateable.extend(update.clone());
+    if prev_count + update_count != updateable.len() {
+        return Err(PoetryError::AddError { deps: update });
     }
 
-    let responses = futures::future::try_join_all(requests)
-        .await
-        .map_err(|e| PoetryError::ReqwestError { source: e })?;
-
-    let mut projresps = Vec::with_capacity(deps.len());
-    for response in responses {
-        projresps.push(response.json::<ProjectResp>().await?);
-    }
-    return Ok(projresps);
+    return Ok(updateable);
 }

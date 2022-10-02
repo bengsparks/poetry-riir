@@ -103,6 +103,9 @@ struct Add {
 
     #[clap(short, long, action)]
     dry_run: bool,
+
+    #[clap(short, long, value_parser)]
+    working_directory: PathBuf,
 }
 
 async fn add(matches: &ArgMatches) -> Result<(), PoetryError> {
@@ -125,6 +128,11 @@ async fn add(matches: &ArgMatches) -> Result<(), PoetryError> {
         },
 
         dry_run: matches.get_flag("dry-run"),
+
+        working_directory: match matches.get_one::<PathBuf>("working_directory") {
+            Some(wd) => wd.clone(),
+            None => std::env::current_dir()?,
+        },
     };
 
     return add::climain(options).await;

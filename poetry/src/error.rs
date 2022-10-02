@@ -1,4 +1,8 @@
+use std::{collections::HashMap, path::PathBuf};
+
 use thiserror::Error as ThisError;
+
+use crate::pyproject::DependencyMetadata;
 
 #[derive(ThisError, Debug)]
 pub enum PoetryError {
@@ -32,12 +36,26 @@ pub enum PoetryError {
         source: reqwest::Error,
     },
 
-    #[error("Unable to create package format from {format}")]
+    #[error("Unable to create package format from '{format}'")]
     UnknownPackageFormat { format: String },
 
     #[error("Unknown license: {license}")]
     UnknownLicense { license: String },
 
     #[error("Could not add {deps:?} to pyproject.toml")]
-    AddError { deps: Vec<String> },
+    AddError {
+        deps: HashMap<String, DependencyMetadata>,
+    },
+
+    #[error("Failed to parse semver: {name}@{version}")]
+    SemverError { name: String, version: String },
+
+    #[error("Failed to create virtual environment at {location}")]
+    VirtualEnvError { location: PathBuf },
+
+    #[error("{e}")]
+    GitError {
+        #[from]
+        e: git2::Error,
+    },
 }
